@@ -1,0 +1,15 @@
+.DS_Store
+*.zip
+__*
+*.pyc
+requests*
+boto3*
+botocore*
+concurrent
+dateutil
+docutils*
+futures*
+jmespath*
+python_dateutil*
+s3transfer*
+six*

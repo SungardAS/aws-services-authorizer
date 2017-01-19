@@ -1,0 +1,14 @@
+version: 0.1
+phases:
+  install:
+    commands:
+      - cd src; pip install -r requirements.txt -t .; cd ..
+      - aws cloudformation package
+         --template-file template.yaml
+         --s3-bucket $S3_BUCKET_NAME
+         --output-template-file samTemplate.yaml
+artifacts:
+  type: zip
+  files:
+    - samTemplate.yaml
+    - env_dev.json
