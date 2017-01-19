@@ -55,4 +55,3 @@ Blog:
 [labs-github-url]: https://sungardas.github.io
 [labs-logo]: https://raw.githubusercontent.com/SungardAS/repo-assets/master/images/logos/sungardas-labs-logo-small.png
 [aws-services-image]: ./docs/images/logo.png?raw=true
-[aws-services-image]: ./docs/images/logo.png?raw=true
