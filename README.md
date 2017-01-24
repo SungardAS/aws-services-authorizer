@@ -34,6 +34,16 @@ Lambda Function for custom authorizer in API Gateway
 
   2. Set the parameter json in 'Parameter overrides' under 'Advanced' setting
 
+- Add another Action to encrypt secret environment variable(s) of Lambda Function after "Execute a change set" action
+
+  > Action category : Invoke
+
+  > Provider : AWS Lambda
+
+  > Function name : ARN of encryption Lambda Function
+
+  > user parameters : {"stack_name":"\<\<name_of_this_project_stack\>\>"}
+
 
 ## How To Test Lambda Functions
 
