@@ -7,20 +7,7 @@ Lambda Function for custom authorizer in API Gateway
 
 ## How To Setup a CodePipeline
 
-- First, create a S3 Bucket where the deployment files will be uploaded with below naming convention. *(You can use a different convention, but you need to add a permission for the CodeBuild to access this S3 bucket)*.
-
-  >
-
-      codepipeline-<region>-<account_num>-<project_name>
-
-  like
-
-      codepipeline-us-east-1-9999999999-aws-services-authorizer
-
-
-- Follow the steps in http://docs.aws.amazon.com/lambda/latest/dg/automating-deployment.html along with an additional step to set an environment variable under 'Advanced' setting when creating a new project in CodeBuild
-
-  > S3_BUCKET_NAME : S3 bucket name you created above
+- Please see here, https://github.com/SungardAS/aws-services-encryption#how-to-setup-a-codepipeline
 
 - Follow either way to set input parameter values of the template when creating a build action whose mode is 'Create of replace a change set'
 
