@@ -49,8 +49,8 @@ Lambda Function for custom authorizer in API Gateway
 
 - $ cd tests
 - Export environment variables, SSO_HOST, SSO_BASIC_AUTH_USERNAME, SSO_BASIC_AUTH_PASSWORD, SSO_MASTER_TOKEN
-- Replace \<username\> and \<password\> with proper values in 'test_authorizer.py'
-- $ python test_authorizer.py
+- Replace \<username\> and \<password\> with proper values in 'test.py'
+- $ python test.py
 
 ## [![Sungard Availability Services | Labs][labs-logo]][labs-github-url]
 

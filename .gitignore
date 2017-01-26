@@ -13,3 +13,4 @@ jmespath*
 python_dateutil*
 s3transfer*
 six*
+samTemplate.yaml

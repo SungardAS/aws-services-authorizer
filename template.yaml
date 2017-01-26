@@ -81,7 +81,7 @@ Resources:
                       - "logs:PutLogEvents"
                     Resource: "arn:aws:logs:*:*:*"
 
-  LambdaFunction:
+  AuthorizerLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
       Handler: authorizer.lambda_handler
@@ -98,10 +98,51 @@ Resources:
           KMS_KEY_ID: !Ref EncryptionDecryptionKey
           KMS_KEY_ARN: !GetAtt EncryptionDecryptionKey.Arn
 
+  ApiGatewayApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      DefinitionUri: ./swagger.yaml
+      StageName: Prod
+      Variables:
+        AuthenticationLambdaFunctionName: !Ref AuthenticationLambdaFunction
+
+  AuthenticationLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: authenticator.lambda_handler
+      Runtime: python2.7
+      CodeUri: ./src
+      Role: !GetAtt LambdaFunctionIAMRole.Arn
+      Timeout: 60
+      Environment:
+        Variables:
+          SSO_HOST: !Ref SSOHost
+          SSO_BASIC_AUTH_USERNAME: !Ref SSOBasicAuthUsername
+          SSO_BASIC_AUTH_PASSWORD: !Ref SSOBasicAuthPassword
+          SSO_MASTER_TOKEN: !Ref SSOMasterToken
+          KMS_KEY_ID: !Ref EncryptionDecryptionKey
+          KMS_KEY_ARN: !GetAtt EncryptionDecryptionKey.Arn
+      Events:
+        AuthApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayApi
+            Path: /auth
+            Method: POST
+
 Outputs:
-  LambdaFunction:
-    Description: "Lambda Function ARN"
-    Value: !GetAtt LambdaFunction.Arn
+  AuthenticationApiUrl:
+    Description: URL of Authentication API endpoint
+    Value: !Join
+      - ''
+      - - https://
+        - !Ref ApiGatewayApi
+        - '.execute-api.'
+        - !Ref 'AWS::Region'
+        - '.amazonaws.com/Prod'
+  AuthorizerLambdaFunction:
+    Description: "Authorizer Lambda Function ARN"
+    Value: !GetAtt AuthorizerLambdaFunction.Arn
   KMSKeyId:
     Description: "KMS Key Id"
     Value: !Ref EncryptionDecryptionKey

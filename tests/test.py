@@ -11,13 +11,13 @@ sys.path.insert(0, r"../src")
 
 import json
 from sso import authenticate
-ret = authenticate('<username>', '<password>')
+ret = authenticate('', '')
 refresh_token = json.loads(ret)['refresh_token']
 
 from authorizer import lambda_handler
 context = None
 event = {
-    'authorizationToken': refresh_token,
-    'methodArn': 'arn:aws:lambda:us-east-1:11111111:function/aaa:custom_authorizer'
+    "authorizationToken": refresh_token,
+    "methodArn": "arn:aws:lambda:us-east-1:11111111:function/aaa:custom_authorizer"
 }
 lambda_handler(event, context)
