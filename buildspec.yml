@@ -2,6 +2,8 @@ version: 0.1
 phases:
   install:
     commands:
+      - sed -i "s/AWS::REGION/$AWS_DEFAULT_REGION/g" swagger.yaml
+      - sed -i "s/AWS::ACCOUNT_ID/$AWS_ACCOUNT_ID/g" swagger.yaml
       - cd src; pip install -r requirements.txt -t .; cd ..
       - aws cloudformation package
          --template-file template.yaml
@@ -11,4 +13,3 @@ artifacts:
   type: zip
   files:
     - samTemplate.yaml
-    - env_dev.json

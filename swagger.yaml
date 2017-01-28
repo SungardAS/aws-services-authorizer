@@ -56,7 +56,7 @@ paths:
             statusCode: "403"
             responseParameters:
               method.response.header.Access-Control-Allow-Origin: "'*'"
-        uri: "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:089476987273:function:${stageVariables.AuthenticationLambdaFunctionName}/invocations"
+        uri: "arn:aws:apigateway:AWS::REGION:lambda:path/2015-03-31/functions/arn:aws:lambda:AWS::REGION:AWS::ACCOUNT_ID:function:${stageVariables.AuthenticationLambdaFunctionName}/invocations"
         passthroughBehavior: "when_no_match"
         requestTemplates:
           application/json: "{\n  \"username\": \"$input.path('$').username\",\n \
