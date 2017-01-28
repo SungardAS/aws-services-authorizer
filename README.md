@@ -7,43 +7,19 @@ Lambda Function for custom authorizer in API Gateway
 
 ## How To Setup a CodePipeline
 
-- Please see here, https://github.com/SungardAS/aws-services-encryption#how-to-setup-a-codepipeline
+<a href="https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=ServerlessCodePipeline&amp;templateURL=https://s3.amazonaws.com/cloudformation-serverless-codepipeline.us-east-1/codepipeline.yaml"><img src="https://camo.githubusercontent.com/210bb3bfeebe0dd2b4db57ef83837273e1a51891/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f636c6f7564666f726d6174696f6e2d6578616d706c65732f636c6f7564666f726d6174696f6e2d6c61756e63682d737461636b2e706e67" alt="Launch Stack" data-canonical-src="https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png" /></a>
 
-- Follow either way to set input parameter values of the template when creating a build action whose mode is 'Create of replace a change set'
+Input Parameter Values
 
-  1. Using a configuration file
-
-    > Create a configuration json file that has input parameter values as below
-
-          {
-              "Parameters": {
-                "SSOHost": "value1",
-                "SSOBasicAuthUsername": "value2",
-                "SSOBasicAuthPassword": "value3",
-                "SSOMasterToken": "value4"
-              }
-          }
-
-    > Set the name of the above json file in 'Template configuration' using below format
-
-        InputArtifactName::TemplateConfigurationFileName
-
-    like
-
-        MyAppBuild::env_dev.json
-
-  2. Set the parameter json in 'Parameter overrides' under 'Advanced' setting
-
-- Add another Action to encrypt secret environment variable(s) of Lambda Function after "Execute a change set" action
-
-  > Action category : Invoke
-
-  > Provider : AWS Lambda
-
-  > Function name : ARN of encryption Lambda Function
-
-  > user parameters : {"stack_name":"\<\<name_of_this_project_stack\>\>"}
-
+- CloudformationLambdaExecutionRoleArn: *role_arn* (See <a href="https://s3.amazonaws.com/cloudformation-serverless-codepipeline.us-east-1/roles/role_cloudformation-lambda-execution-role.json">here</a> for Trust Relationships and Policy Document)
+- CodePipelineServiceRoleArn: *role_arn*  (See <a href="https://s3.amazonaws.com/cloudformation-serverless-codepipeline.us-east-1/roles/role_AWS-CodePipeline-Service.json">here</a> for Trust Relationships and Policy Document)
+- EncryptionLambdaName: *encryption_lambda_function_name*
+- GitHubPersonalAccessToken: *access_token* (See <a href="https://help.github.com/articles/creating-an-access-token-for-command-line-use/">here</a> to find how to genernate the access token)
+- GitHubSourceRepositoryBranch: master
+- GitHubSourceRepositoryName: aws-services-authorizer
+- GitHubSourceRepositoryOwner: SungardAS
+- ParameterOverrides: { "SSOHost": "*sso_host*", "SSOBasicAuthUsername": "*sso_user*", "SSOBasicAuthPassword": "*sso_password*", "SSOMasterToken": "*sso_master_token*" }
+- ProjectImage: aws/codebuild/python:2.7.12
 
 ## How To Test Lambda Functions
 
