@@ -42,7 +42,7 @@ def lambda_handler(event, context):
                 #raise Exception('Unauthorized')
                 error = 'Unauthorized'
             print('refresh_token = %s' % refresh_token)
-            #if refresh_token is None:
+            if refresh_token is None:
                 #raise Exception('Unauthorized')
                 error = 'Unauthorized'
         principalId = 'user|a1b2c3d4'
