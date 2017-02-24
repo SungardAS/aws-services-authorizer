@@ -19,27 +19,33 @@ def lambda_handler(event, context):
     2. Decode a JWT token inline
     3. Lookup in a self-managed DB
     '''
+
+    refresh_token = None
+    error = None
+
     token = event.get('authorizationToken')
     if token is None:
-        raise Exception('Unauthorized')
-
-    master_token = os.environ.get('SSO_MASTER_TOKEN')
-    DECRYPTED = boto3.client('kms').decrypt(CiphertextBlob=b64decode(master_token))['Plaintext']
-    if token == DECRYPTED:
-        refresh_token = token
+        #raise Exception('Unauthorized')
+        error = 'Unauthorized'
     else:
-        try:
-            ret = validate_token(token)
-            print(ret)
-            refresh_token = json.loads(ret).get('refresh_token')
-        except Exception, ex:
-            print(ex)
-            raise Exception('Unauthorized')
-        print('refresh_token = %s' % refresh_token)
-        if refresh_token is None:
-            raise Exception('Unauthorized')
-
-    principalId = 'user|a1b2c3d4'
+        master_token = os.environ.get('SSO_MASTER_TOKEN')
+        DECRYPTED = boto3.client('kms').decrypt(CiphertextBlob=b64decode(master_token))['Plaintext']
+        if token == DECRYPTED:
+            refresh_token = token
+        else:
+            try:
+                ret = validate_token(token)
+                print(ret)
+                refresh_token = json.loads(ret).get('refresh_token')
+            except Exception, ex:
+                print(ex)
+                #raise Exception('Unauthorized')
+                error = 'Unauthorized'
+            print('refresh_token = %s' % refresh_token)
+            #if refresh_token is None:
+                #raise Exception('Unauthorized')
+                error = 'Unauthorized'
+        principalId = 'user|a1b2c3d4'
 
     '''
     You can send a 401 Unauthorized response to the client by failing like so:
@@ -87,6 +93,8 @@ def lambda_handler(event, context):
     }
     # context['arr'] = ['foo'] <- this is invalid, APIGW will not accept it
     # context['obj'] = {'foo':'bar'} <- also invalid
+    if error:
+        context['error'] = error
 
     authResponse['context'] = context
 
