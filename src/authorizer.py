@@ -5,10 +5,19 @@ import re
 import json
 import boto3
 from base64 import b64decode
-from sso import validate_token
+from sso import extend_token, find_user_detail
 import redis
 
 redis_connection = None
+
+def find_user_detail_from_sso(access_token):
+    try:
+        ret = find_user_detail(access_token)
+        print("user detail of access_token [%s] : %s" % (access_token, ret))
+        return ret
+    except Exception, ex:
+        print("failed to find user detail of access_token [%s] : %s" % (access_token, ex))
+        return None
 
 def lambda_handler(event, context):
     print("Client token: " + event['authorizationToken'])
@@ -31,11 +40,13 @@ def lambda_handler(event, context):
         if redis_host:
             redis_connection = redis.StrictRedis(host=redis_host, port=redis_port, db=0)
 
+    user_info = None
     refresh_token = None
+    access_token = None
+    user_guid = None
     error = None
 
     token = event.get('authorizationToken')
-    first_refresh_token = token;
     if token is None:
         #raise Exception('Unauthorized')
         error = 'Unauthorized'
@@ -47,12 +58,20 @@ def lambda_handler(event, context):
         else:
             if redis_connection:
                 # find the latest refresh_token if exists
-                refresh_token = redis_connection.get(token)
-                print("latest_refresh_token = %s" % refresh_token)
-                if refresh_token:    token = refresh_token
+                user_info = redis_connection.get(token)
+                print("user_info = %s" % user_info)
+                if user_info:
+                    user_info = json.loads(user_info)
+                    user_guid = user_info.get('user_guid')
+                    refresh_token = user_info.get('refresh_token')
+                else:
+                    user_info = {}
+            if refresh_token is None:
+                refresh_token = token
             try:
-                ret = validate_token(token)
+                ret = extend_token(refresh_token)
                 print(ret)
+                access_token = json.loads(ret).get('access_token')
                 refresh_token = json.loads(ret).get('refresh_token')
             except Exception, ex:
                 print(ex)
@@ -63,9 +82,18 @@ def lambda_handler(event, context):
                 #raise Exception('Unauthorized')
                 error = 'Unauthorized'
             elif redis_connection:
+                if user_guid is None:
+                    # find user_guid using the access_token
+                    user_detail = find_user_detail_from_sso(access_token)
+                    if user_detail is None:
+                        error = 'Unauthorized'
+                    else:
+                        user_guid = json.loads(user_detail).get('userGuid')
+                        user_info['user_guid'] = user_guid
                 # save the latest refresh token
-                redis_connection.set(first_refresh_token, refresh_token)
-                print("latest_refresh_token is save : %s" % refresh_token)
+                user_info['refresh_token'] = refresh_token
+                redis_connection.set(token, json.dumps(user_info))
+                print("user info is saved : %s" % user_info)
 
         principalId = 'user|a1b2c3d4'
 
@@ -111,7 +139,8 @@ def lambda_handler(event, context):
         #'key': 'value',  # $context.authorizer.key -> value
         #'number': 1,
         #'bool': True
-        'refresh_token': refresh_token
+        'refresh_token': refresh_token,
+        'user_guid': user_guid
     }
     # context['arr'] = ['foo'] <- this is invalid, APIGW will not accept it
     # context['obj'] = {'foo':'bar'} <- also invalid
