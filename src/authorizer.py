@@ -6,6 +6,9 @@ import json
 import boto3
 from base64 import b64decode
 from sso import validate_token
+import redis
+
+redis_connection = None
 
 def lambda_handler(event, context):
     print("Client token: " + event['authorizationToken'])
@@ -20,10 +23,19 @@ def lambda_handler(event, context):
     3. Lookup in a self-managed DB
     '''
 
+    # connect to the redis cluster
+    global redis_connection
+    if redis_connection is None:
+        redis_host = os.environ.get('REDIS_HOST')
+        redis_port = os.environ.get('REDIS_PORT')
+        if redis_host:
+            redis_connection = redis.StrictRedis(host=redis_host, port=redis_port, db=0)
+
     refresh_token = None
     error = None
 
     token = event.get('authorizationToken')
+    first_refresh_token = token;
     if token is None:
         #raise Exception('Unauthorized')
         error = 'Unauthorized'
@@ -33,6 +45,11 @@ def lambda_handler(event, context):
         if token == DECRYPTED:
             refresh_token = token
         else:
+            if redis_connection:
+                # find the latest refresh_token if exists
+                refresh_token = redis_connection.get(token)
+                print("latest_refresh_token = %s" % refresh_token)
+                if refresh_token:    token = refresh_token
             try:
                 ret = validate_token(token)
                 print(ret)
@@ -45,6 +62,11 @@ def lambda_handler(event, context):
             if refresh_token is None:
                 #raise Exception('Unauthorized')
                 error = 'Unauthorized'
+            elif redis_connection:
+                # save the latest refresh token
+                redis_connection.set(first_refresh_token, refresh_token)
+                print("latest_refresh_token is save : %s" % refresh_token)
+
         principalId = 'user|a1b2c3d4'
 
     '''

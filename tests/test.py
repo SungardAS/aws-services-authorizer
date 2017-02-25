@@ -4,6 +4,8 @@ export SSO_HOST=
 export SSO_BASIC_AUTH_USERNAME=
 export SSO_BASIC_AUTH_PASSWORD=
 export SSO_MASTER_TOKEN=
+export REDIS_HOST=
+export REDIS_PORT=
 """
 
 import sys

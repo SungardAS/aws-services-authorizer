@@ -1,0 +1,34 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Outputs:
+ RedisSecurityGroupId:
+  Value: !Ref RedisSecurityGroup
+Parameters:
+ NameTag:
+  Type: String
+  Default: ReplicationBlog
+  AllowedPattern: "[\\x20-\\x7E]*"
+  MaxLength: 255
+  MinLength: 1
+  Description: "Set the name tag for resources."
+  ConstraintDescription: "can contain only ASCII characters."
+ VpcId:
+  Type: "AWS::EC2::VPC::Id"
+Resources:
+ RedisSecurityGroup:
+  Type: "AWS::EC2::SecurityGroup"
+  Properties:
+   GroupDescription: RedisSecurityGroup
+   VpcId: !Ref VpcId
+   Tags:
+    -
+     Key: Name
+     Value: !Join
+       - "."
+       - - !Ref NameTag
+         - "sg"
+ DefaultSecurityGroupIngress:
+  Type: "AWS::EC2::SecurityGroupIngress"
+  Properties:
+   GroupId: !Ref RedisSecurityGroup
+   IpProtocol: -1
+   SourceSecurityGroupId: !Ref RedisSecurityGroup

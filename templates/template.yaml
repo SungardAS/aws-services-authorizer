@@ -1,0 +1,313 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: "AWS::Serverless-2016-10-31"
+Parameters:
+  VpcCidr:
+    Type: String
+    Default: "10.11.0.0/16"
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    MaxLength: 18
+    MinLength: 9
+    Description: "VPC Cidr Block. Format: x.x.x.x/x"
+    ConstraintDescription: "must be a valid CIDR range formatted as x.x.x.x/x"
+  PublicCidr1:
+    Type: String
+    Default: "10.11.0.0/20"
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    MaxLength: 18
+    MinLength: 9
+    Description: "First Public Cidr Block. Format: x.x.x.x/x"
+    ConstraintDescription: "must be a valid CIDR range formatted as x.x.x.x/x"
+  PublicCidr2:
+    Type: String
+    Default: "10.11.16.0/20"
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    MaxLength: 18
+    MinLength: 9
+    Description: "Second Public Cidr Block. Format: x.x.x.x/x"
+    ConstraintDescription: "must be a valid CIDR range formatted as x.x.x.x/x"
+  PrivateCidr1:
+    Type: String
+    Default: "10.11.32.0/20"
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    MaxLength: 18
+    MinLength: 9
+    Description: "First Private Cidr Block. Format: x.x.x.x/x"
+    ConstraintDescription: "must be a valid CIDR range formatted as x.x.x.x/x"
+  PrivateCidr2:
+    Type: String
+    Default: "10.11.48.0/20"
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    MaxLength: 18
+    MinLength: 9
+    Description: "Second Private Cidr Block. Format: x.x.x.x/x"
+    ConstraintDescription: "must be a valid CIDR range formatted as x.x.x.x/x"
+  NameTag:
+    Type: String
+    Default: "redis-vpc"
+    AllowedPattern: "[\\x20-\\x7E]*"
+    MaxLength: 255
+    MinLength: 1
+    Description: "Set the name tag for vpc."
+    ConstraintDescription: "can contain only ASCII characters."
+  SSOHost:
+    Type: String
+    Description: SSO Host
+  SSOBasicAuthUsername:
+    Type: String
+    Description: Username for SSO Auth
+  SSOBasicAuthPassword:
+    Type: String
+    NoEcho: true
+    Description: Password for SSO Auth
+  SSOMasterToken:
+    Type: String
+    NoEcho: true
+    Description: Master Refresh Token
+
+Resources:
+  Vpc:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: "./vpc.yaml"
+      Parameters:
+        VpcCidr: !Ref VpcCidr
+        CreateVpcSecurityGroup: false
+        OpenVpcCommunication: false
+        CreateInternetGateway: false
+        NameTag: !Ref NameTag
+  RouteTables:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: "./route_tables.yaml"
+      Parameters:
+        NameTag: !Ref NameTag
+        VpcId: !Sub "${Vpc.Outputs.VpcId}"
+  PublicSubnet1:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: "./subnet.yaml"
+      Parameters:
+        NameTag: !Join
+          - "."
+          - - !Ref NameTag
+            - "public.subnet.1"
+        AvailabilityZone: !Select [ 1, !GetAZs "" ]
+        VpcId: !Sub "${Vpc.Outputs.VpcId}"
+        SubnetCidr: !Ref PublicCidr1
+        RouteTableId: !Sub "${RouteTables.Outputs.RouteTableIdForPublicSubnets}"
+  PublicSubnet2:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: "./subnet.yaml"
+      Parameters:
+        NameTag: !Join
+          - "."
+          - - !Ref NameTag
+            - "public.subnet.2"
+        AvailabilityZone: !Select [ 1, !GetAZs "" ]
+        VpcId: !Sub "${Vpc.Outputs.VpcId}"
+        SubnetCidr: !Ref PublicCidr2
+        RouteTableId: !Sub "${RouteTables.Outputs.RouteTableIdForPublicSubnets}"
+  PrivateSubnet1:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: "./subnet.yaml"
+      Parameters:
+        NameTag: !Join
+          - "."
+          - - !Ref NameTag
+            - "private.subnet.1"
+        VpcId: !Sub "${Vpc.Outputs.VpcId}"
+        SubnetCidr: !Ref PrivateCidr1
+        AvailabilityZone: !Sub "${PublicSubnet1.Outputs.AvailabilityZone}"
+        RouteTableId: !Sub "${RouteTables.Outputs.RouteTableIdForPrivateSubnets}"
+  PrivateSubnet2:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: "./subnet.yaml"
+      Parameters:
+        NameTag: !Join
+          - "."
+          - - !Ref NameTag
+            - "private.subnet.2"
+        VpcId: !Sub "${Vpc.Outputs.VpcId}"
+        SubnetCidr: !Ref PrivateCidr2
+        AvailabilityZone: !Sub "${PublicSubnet2.Outputs.AvailabilityZone}"
+        RouteTableId: !Sub "${RouteTables.Outputs.RouteTableIdForPrivateSubnets}"
+  SecurityGroups:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: "./security_groups.yaml"
+      Parameters:
+        NameTag: !Ref NameTag
+        VpcId: !Sub "${Vpc.Outputs.VpcId}"
+  NatGateway:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: "./nat_gateway.yaml"
+      Parameters:
+        PublicSubnetId: !Sub "${PublicSubnet1.Outputs.SubnetId}"
+        RouteTableId: !Sub "${RouteTables.Outputs.RouteTableIdForPrivateSubnets}"
+  RedisCluster:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: "./redis.yaml"
+      Parameters:
+        RedisSubnetId1: !Sub "${PrivateSubnet1.Outputs.SubnetId}"
+        RedisSubnetId2: !Sub "${PrivateSubnet2.Outputs.SubnetId}"
+        RedisSecurityGroupId: !Sub "${SecurityGroups.Outputs.RedisSecurityGroupId}"
+  EncryptionDecryptionKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: "Encryption and Decryption key for Lambda Function Environment Variables"
+      KeyPolicy:
+        Id: "LambdaEncDec"
+        Version: "2012-10-17"
+        Statement:
+          -
+            Sid: "Allow administration of the key"
+            Effect: "Allow"
+            Action:
+              - "kms:*"
+            Principal:
+              AWS: !Ref AWS::AccountId
+            Resource: '*'
+          -
+            Sid: "Allow Encryption Service to use this key"
+            Effect: "Allow"
+            Action:
+              - "kms:Encrypt"
+            Principal:
+              AWS: !GetAtt LambdaFunctionIAMRole.Arn
+            Resource: '*'
+          -
+            Sid: "Allow Decryption Service to use this key"
+            Effect: "Allow"
+            Action:
+              - "kms:Decrypt"
+            Principal:
+              AWS: !GetAtt LambdaFunctionIAMRole.Arn
+            Resource: '*'
+
+  LambdaFunctionIAMRole:
+      Type: "AWS::IAM::Role"
+      Properties:
+          Path: "/"
+          AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Sid: "AllowLambdaServiceToAssumeRole"
+                Effect: "Allow"
+                Action:
+                  - "sts:AssumeRole"
+                Principal:
+                  Service:
+                    - "lambda.amazonaws.com"
+          Policies:
+            -
+              PolicyName: "InlinePolicy"
+              PolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                  -
+                    Effect: "Allow"
+                    Action:
+                      - "logs:CreateLogGroup"
+                      - "logs:CreateLogStream"
+                      - "logs:PutLogEvents"
+                    Resource: "arn:aws:logs:*:*:*"
+                  -
+                    Effect: "Allow"
+                    Action:
+                      - "kms:*"
+                      - "ec2:*"
+                    Resource: "*"
+
+  AuthorizerLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: SungardAS-Authorization
+      Handler: authorizer.lambda_handler
+      Runtime: python2.7
+      CodeUri: ../src
+      Role: !GetAtt LambdaFunctionIAMRole.Arn
+      Timeout: 300
+      VpcConfig:
+        SecurityGroupIds:
+          - !Sub "${SecurityGroups.Outputs.RedisSecurityGroupId}"
+        SubnetIds:
+          - !Sub "${PrivateSubnet1.Outputs.SubnetId}"
+          - !Sub "${PrivateSubnet2.Outputs.SubnetId}"
+      Environment:
+        Variables:
+          SSO_HOST: !Ref SSOHost
+          SSO_BASIC_AUTH_USERNAME: !Ref SSOBasicAuthUsername
+          SSO_BASIC_AUTH_PASSWORD: !Ref SSOBasicAuthPassword
+          SSO_MASTER_TOKEN: !Ref SSOMasterToken
+          REDIS_HOST: !Sub "${RedisCluster.Outputs.RedisEndpointAddress}"
+          REDIS_PORT: !Sub "${RedisCluster.Outputs.RedisEndpointPort}"
+          KMS_KEY_ID: !Ref EncryptionDecryptionKey
+          KMS_KEY_ARN: !GetAtt EncryptionDecryptionKey.Arn
+
+  ApiGatewayApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      DefinitionUri: ../swagger.yaml
+      StageName: Prod
+      Variables:
+        AuthenticationLambdaFunctionName: !Ref AuthenticationLambdaFunction
+
+  AuthenticationLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: SungardAS-Authentication
+      Handler: authenticator.lambda_handler
+      Runtime: python2.7
+      CodeUri: ../src
+      Role: !GetAtt LambdaFunctionIAMRole.Arn
+      Timeout: 60
+      VpcConfig:
+        SecurityGroupIds:
+          - !Sub "${SecurityGroups.Outputs.RedisSecurityGroupId}"
+        SubnetIds:
+          - !Sub "${PrivateSubnet1.Outputs.SubnetId}"
+          - !Sub "${PrivateSubnet2.Outputs.SubnetId}"
+      Environment:
+        Variables:
+          SSO_HOST: !Ref SSOHost
+          SSO_BASIC_AUTH_USERNAME: !Ref SSOBasicAuthUsername
+          SSO_BASIC_AUTH_PASSWORD: !Ref SSOBasicAuthPassword
+          SSO_MASTER_TOKEN: !Ref SSOMasterToken
+          KMS_KEY_ID: !Ref EncryptionDecryptionKey
+          KMS_KEY_ARN: !GetAtt EncryptionDecryptionKey.Arn
+      Events:
+        AuthApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayApi
+            Path: /auth
+            Method: POST
+
+Outputs:
+  AuthenticationApiUrl:
+    Description: URL of Authentication API endpoint
+    Value: !Join
+      - ''
+      - - https://
+        - !Ref ApiGatewayApi
+        - '.execute-api.'
+        - !Ref 'AWS::Region'
+        - '.amazonaws.com/Prod'
+  AuthorizerLambdaFunctionArn:
+    Description: "Authorizer Lambda Function ARN"
+    Value: !GetAtt AuthorizerLambdaFunction.Arn
+  AuthenticationLambdaFunctionArn:
+    Description: "Authentication Lambda Function ARN"
+    Value: !GetAtt AuthenticationLambdaFunction.Arn
+  KMSKeyId:
+    Description: "KMS Key Id"
+    Value: !Ref EncryptionDecryptionKey
+  KMSKeyArn:
+    Description: "KMS Key Id"
+    Value: !GetAtt EncryptionDecryptionKey.Arn

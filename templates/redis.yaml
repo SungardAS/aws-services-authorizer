@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  RedisSubnetId1:
+    Type: String
+  RedisSubnetId2:
+    Type: String
+  RedisSecurityGroupId:
+    Type: String
+Resources:
+  RedisSubnetGroup:
+    Type: "AWS::ElastiCache::SubnetGroup"
+    Properties:
+      Description: Subnet Group For Redis Cluster
+      SubnetIds:
+        - !Ref RedisSubnetId1
+        - !Ref RedisSubnetId2
+  RedisCluster:
+    Type: "AWS::ElastiCache::CacheCluster"
+    Properties:
+      CacheNodeType: "cache.m3.medium"
+      Engine: "redis"
+      CacheSubnetGroupName: !Ref RedisSubnetGroup
+      VpcSecurityGroupIds:
+        - !Ref RedisSecurityGroupId
+      NumCacheNodes: "1"
+Outputs:
+  RedisEndpointAddress:
+    Value: !Sub "${RedisCluster.RedisEndpoint.Address}"
+  RedisEndpointPort:
+    Value: !Sub "${RedisCluster.RedisEndpoint.Port}"

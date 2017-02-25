@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Outputs:
+  RouteTableIdForPublicSubnets:
+    Value: !Ref RouteTableForPublicSubnets
+  RouteTableIdForPrivateSubnets:
+    Value: !Ref RouteTableForPrivateSubnets
+Parameters:
+  VpcId:
+    Type: "AWS::EC2::VPC::Id"
+  NameTag:
+    Type: String
+    Default: default
+    AllowedPattern: "[\\x20-\\x7E]*"
+    MaxLength: 255
+    MinLength: 1
+    Description: "Set the name tag for vpc."
+    ConstraintDescription: "can contain only ASCII characters."
+
+Resources:
+  InternetGateway:
+    Type: "AWS::EC2::InternetGateway"
+    Properties:
+      Tags:
+      -
+        Key: Name
+        Value: !Join
+          - "."
+          - - !Ref NameTag
+            - igw
+  GatewayAttachment:
+    Type: "AWS::EC2::VPCGatewayAttachment"
+    Properties:
+      VpcId: !Ref VpcId
+      InternetGatewayId: !Ref InternetGateway
+  RouteTableForPublicSubnets:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref VpcId
+      Tags:
+        -
+          Key: Name
+          Value: !Join
+            - "."
+            - - !Ref NameTag
+              - "rt.public"
+  RouteTableForPrivateSubnets:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref VpcId
+      Tags:
+        -
+          Key: Name
+          Value: !Join
+            - "."
+            - - !Ref NameTag
+              - "rt.private"
+  IgwRoute:
+    Type: "AWS::EC2::Route"
+    DependsOn: GatewayAttachment
+    Properties:
+      RouteTableId: !Ref RouteTableForPublicSubnets
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref InternetGateway

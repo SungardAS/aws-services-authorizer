@@ -1,0 +1,141 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Conditions:
+ CreateVpcSecurityGroupIsTrueCondition: !Equals [!Ref CreateVpcSecurityGroup, true]
+ CreateVpcSecurityGroupIsFalseCondition: !Equals [!Ref CreateVpcSecurityGroup, false]
+ OpenVpcCommunicationIsTrueCondition: !Equals [!Ref OpenVpcCommunication, true]
+ OpenVpcCommunicationIsFalseCondition: !Equals [!Ref OpenVpcCommunication, false]
+ CreateInternetGatewayIsTrueCondition: !Equals [!Ref CreateInternetGateway, true]
+ CreateInternetGatewayIsFalseCondition: !Equals [!Ref CreateInternetGateway, false]
+Outputs:
+ VpcId:
+  Value:
+   Ref: Vpc
+ RouteTableId:
+  Value:
+   Ref: RouteTable
+ SecurityGroupId:
+  Value:
+   Ref: VpcSecurityGroup
+  Condition: CreateVpcSecurityGroupIsTrueCondition
+Parameters:
+ VpcCidr:
+  Type: String
+  AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+  MaxLength: 18
+  MinLength: 9
+  Description: "Valid CIDR Range. Format: x.x.x.x/x"
+  ConstraintDescription: "must be a valid CIDR range formatted as x.x.x.x/x"
+ CreateVpcSecurityGroup:
+  Type: String
+  Default: false
+  MaxLength: 5
+  MinLength: 4
+  Description: "[true|false] Create a security group assigned to the new VPC"
+  ConstraintDescription: "[true|false]"
+ OpenVpcCommunication:
+  Type: String
+  Default: false
+  MaxLength: 5
+  MinLength: 4
+  Description: "[true|false] Open all communication within the VPC"
+  ConstraintDescription: "[true|false]"
+ CreateInternetGateway:
+  Type: String
+  Default: false
+  MaxLength: 5
+  MinLength: 4
+  Description: "[true|false] Create an Internet Gateway for the VPC"
+  ConstraintDescription: "[true|false]"
+ NameTag:
+  Description: "Set the name tag for resources."
+  Default: default
+  Type: String
+  MinLength: 1
+  MaxLength: 255
+  AllowedPattern: "[\\x20-\\x7E]*"
+  ConstraintDescription: "can contain only ASCII characters."
+Resources:
+ Vpc:
+  Type: "AWS::EC2::VPC"
+  Properties:
+   CidrBlock: !Ref VpcCidr
+   InstanceTenancy: default
+   EnableDnsSupport: true
+   EnableDnsHostnames: true
+   Tags:
+    -
+     Key: Name
+     Value: !Ref NameTag
+ InternetGateway:
+  Type: "AWS::EC2::InternetGateway"
+  Condition: CreateInternetGatewayIsTrueCondition
+  Properties:
+   Tags:
+    -
+     Key: Name
+     Value: !Ref NameTag
+ NetworkAcl:
+  Type: "AWS::EC2::NetworkAcl"
+  Properties:
+   VpcId: !Ref Vpc
+ RouteTable:
+  Type: "AWS::EC2::RouteTable"
+  Properties:
+   VpcId: !Ref Vpc
+   Tags:
+    -
+     Key: Name
+     Value: !Ref NameTag
+ VpcSecurityGroup:
+  Type: "AWS::EC2::SecurityGroup"
+  Condition: CreateVpcSecurityGroupIsTrueCondition
+  Properties:
+   GroupDescription: "VPC Default Security Group"
+   VpcId: !Ref Vpc
+   SecurityGroupEgress:
+    -
+     IpProtocol: "-1"
+     CidrIp: "0.0.0.0/0"
+   Tags:
+    -
+     Key: Name
+     Value: !Ref NameTag
+ SecurityGroupIngress:
+  Type: "AWS::EC2::SecurityGroupIngress"
+  Condition: OpenVpcCommunicationIsTrueCondition
+  Properties:
+   GroupId: !GetAtt VpcSecurityGroup.GroupId
+   IpProtocol: "-1"
+   SourceSecurityGroupId: !GetAtt VpcSecurityGroup.GroupId
+ Acl1:
+  Type: "AWS::EC2::NetworkAclEntry"
+  Properties:
+   CidrBlock: "0.0.0.0/0"
+   Egress: true
+   Protocol: "-1"
+   RuleAction: allow
+   RuleNumber: 100
+   NetworkAclId: !Ref NetworkAcl
+ Acl2:
+  Type: "AWS::EC2::NetworkAclEntry"
+  Properties:
+   CidrBlock: "0.0.0.0/0"
+   Protocol: "-1"
+   RuleAction: allow
+   RuleNumber: 100
+   NetworkAclId: !Ref NetworkAcl
+ GatewayAttachment:
+  Type: "AWS::EC2::VPCGatewayAttachment"
+  Condition: CreateInternetGatewayIsTrueCondition
+  Properties:
+   VpcId:
+    Ref: Vpc
+   InternetGatewayId: !Ref InternetGateway
+ DefaultRoute:
+  Type: "AWS::EC2::Route"
+  Condition: CreateInternetGatewayIsTrueCondition
+  Properties:
+   DestinationCidrBlock: "0.0.0.0/0"
+   RouteTableId: !Ref RouteTable
+   GatewayId: !Ref InternetGateway
+  DependsOn: InternetGateway
