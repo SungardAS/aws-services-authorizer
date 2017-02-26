@@ -11,15 +11,35 @@ Lambda Function for custom authorizer in API Gateway
 
 Input Parameter Values
 
-- CloudformationLambdaExecutionRoleArn: *role_arn* (See <a href="https://s3.amazonaws.com/cloudformation-serverless-codepipeline.us-east-1/roles/role_cloudformation-lambda-execution-role.json">here</a> for Trust Relationships and Policy Document)
-- CodePipelineServiceRoleArn: *role_arn*  (See <a href="https://s3.amazonaws.com/cloudformation-serverless-codepipeline.us-east-1/roles/role_AWS-CodePipeline-Service.json">here</a> for Trust Relationships and Policy Document)
-- EncryptionLambdaName: *encryption_lambda_function_name* (See <a href="https://github.com/SungardAS/aws-services-encryption">here</a> for the Lambda Function Project to Encrypt Environment Variables)
-- GitHubPersonalAccessToken: *access_token* (See <a href="https://help.github.com/articles/creating-an-access-token-for-command-line-use/">here</a> to find how to genernate the access token)
-- GitHubSourceRepositoryBranch: master
-- GitHubSourceRepositoryName: aws-services-authorizer
-- GitHubSourceRepositoryOwner: SungardAS
-- ParameterOverrides: { "SSOHost": "*sso_host*", "SSOBasicAuthUsername": "*sso_user*", "SSOBasicAuthPassword": "*sso_password*", "SSOMasterToken": "*sso_master_token*" }
-- ProjectImage: aws/codebuild/python:2.7.12
+- CloudformationLambdaExecutionRoleArn:
+
+  Enter `ARN of IAM Role for Cloudformation to create changesets and target stack`. If you already created one or more CodePipeline that uses Cloudformation, this role should have been created already, so you can use the same role, 'cloudformation-lambda-execution-role'. If not, please create a role with the same name with Trust Relationships and Policy Document defined <a href="https://s3.amazonaws.com/cloudformation-serverless-codepipeline.us-east-1/roles/role_cloudformation-lambda-execution-role.json">here</a>.
+
+- CodePipelineServiceRoleArn:
+
+  Enter `ARN of IAM Role for CodePipeline to be executed`. If you already created one or more CodePipeline, this role should have been created already, so you can use the same role, 'AWS-CodePipeline-Service'. If not, please create a role with the same name with Trust Relationships and Policy Document defined <a href="https://s3.amazonaws.com/cloudformation-serverless-codepipeline.us-east-1/roles/role_AWS-CodePipeline-Service.json">here</a>.
+
+- CustomAuthorizerIAMRoleName:
+
+- CustomAuthorizerLambdaName:
+
+- EncryptionLambdaName:
+
+  Enter the `NAME (not ARN) of the encryption Lambda Function`. If you didn't already deployed the Encryption Lambda Function, see <a href="https://github.com/SungardAS/aws-services-encryption">here</a> to deploy the Lambda Function to Encrypt Environment Variables.
+
+- GitHubPersonalAccessToken:
+
+  `Access Token` for CodeBuild to access to the this Github repository. (See <a href="https://help.github.com/articles/creating-an-access-token-for-command-line-use/">here</a> to find how to generate the access token).
+
+- GitHubSourceRepositoryBranch: `master`
+
+- GitHubSourceRepositoryName: `aws-services-authorizer`
+
+- GitHubSourceRepositoryOwner: `SungardAS`
+
+- ParameterOverrides: `{ "SSOHost": "sso_host", "SSOBasicAuthUsername": "sso_user", "SSOBasicAuthPassword": "sso_password", "SSOMasterToken": "sso_master_token" }`
+
+- ProjectImage: `aws/codebuild/python:2.7.12`
 
 ## How To Test Lambda Functions
 
