@@ -43,7 +43,7 @@ Parameters:
     ConstraintDescription: "must be a valid CIDR range formatted as x.x.x.x/x"
   NameTag:
     Type: String
-    Default: "redis-vpc"
+    Default: "authroizer"
     AllowedPattern: "[\\x20-\\x7E]*"
     MaxLength: 255
     MinLength: 1
