@@ -65,8 +65,12 @@ Parameters:
     Description: Master Refresh Token
   AZ:
     Type: String
+    Default: ""
     NoEcho: true
     Description: Availability Zone
+
+Conditions:
+  SelectCondition: !Equals [!Ref AZ, ""]
 
 Resources:
   Vpc:
@@ -95,7 +99,7 @@ Resources:
           - "."
           - - !Ref NameTag
             - "public.subnet.1"
-        AvailabilityZone: !Ref AZ
+        AvailabilityZone: !If [SelectCondition, !Select [ 1, !GetAZs "" ], Ref : AZ]
         VpcId: !Sub "${Vpc.Outputs.VpcId}"
         SubnetCidr: !Ref PublicCidr1
         RouteTableId: !Sub "${RouteTables.Outputs.RouteTableIdForPublicSubnets}"
@@ -108,7 +112,7 @@ Resources:
           - "."
           - - !Ref NameTag
             - "public.subnet.2"
-        AvailabilityZone: !Ref AZ
+        AvailabilityZone: !If [SelectCondition, !Select [ 1, !GetAZs "" ], Ref : AZ]
         VpcId: !Sub "${Vpc.Outputs.VpcId}"
         SubnetCidr: !Ref PublicCidr2
         RouteTableId: !Sub "${RouteTables.Outputs.RouteTableIdForPublicSubnets}"
