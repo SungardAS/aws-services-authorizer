@@ -91,7 +91,7 @@ Resources:
           - "."
           - - !Ref NameTag
             - "public.subnet.1"
-        AvailabilityZone: !Select [ 1, !GetAZs "" ]
+        AvailabilityZone: !Select [ 2, !GetAZs "" ]
         VpcId: !Sub "${Vpc.Outputs.VpcId}"
         SubnetCidr: !Ref PublicCidr1
         RouteTableId: !Sub "${RouteTables.Outputs.RouteTableIdForPublicSubnets}"
@@ -104,7 +104,7 @@ Resources:
           - "."
           - - !Ref NameTag
             - "public.subnet.2"
-        AvailabilityZone: !Select [ 1, !GetAZs "" ]
+        AvailabilityZone: !Select [ 2, !GetAZs "" ]
         VpcId: !Sub "${Vpc.Outputs.VpcId}"
         SubnetCidr: !Ref PublicCidr2
         RouteTableId: !Sub "${RouteTables.Outputs.RouteTableIdForPublicSubnets}"
