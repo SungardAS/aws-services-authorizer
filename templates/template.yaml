@@ -189,6 +189,42 @@ Resources:
               AWS: !GetAtt LambdaFunctionIAMRole.Arn
             Resource: '*'
 
+  CustomAuthorizerIAMRole:
+      Type: "AWS::IAM::Role"
+      Properties:
+          RoleName: SungardAS-Custom-Authorizor-IAM-Role
+          Path: "/"
+          AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Sid: "AllowAPIGatewayToAssumeRole"
+                Effect: "Allow"
+                Action:
+                  - "sts:AssumeRole"
+                Principal:
+                  Service:
+                    - "apigateway.amazonaws.com"
+          Policies:
+            -
+              PolicyName: "InlinePolicy"
+              PolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                  -
+                    Effect: "Allow"
+                    Action:
+                      - "s3:GetObject"
+                      - "s3:GetObjectVersion"
+                      - "s3:GetBucketVersioning"
+                    Resource: "*"
+                  -
+                    Effect: "Allow"
+                    Action:
+                      - "lambda:InvokeFunction"
+                      - "lambda:CreateEventSourceMapping"
+                    Resource: "*"
+
   LambdaFunctionIAMRole:
       Type: "AWS::IAM::Role"
       Properties:
@@ -298,16 +334,16 @@ Outputs:
         - !Ref ApiGatewayApi
         - '.execute-api.'
         - !Ref 'AWS::Region'
-        - '.amazonaws.com/Prod'
-  AuthorizerLambdaFunctionArn:
-    Description: "Authorizer Lambda Function ARN"
-    Value: !GetAtt AuthorizerLambdaFunction.Arn
+        - '.amazonaws.com/Prod/auth'
+  CustomAuthorizerLambdaFunctionName:
+    Description: "Authorizer Lambda Function Name"
+    Value: !Ref AuthorizerLambdaFunction
   AuthenticationLambdaFunctionArn:
     Description: "Authentication Lambda Function ARN"
     Value: !GetAtt AuthenticationLambdaFunction.Arn
   KMSKeyId:
     Description: "KMS Key Id"
     Value: !Ref EncryptionDecryptionKey
-  KMSKeyArn:
-    Description: "KMS Key Id"
-    Value: !GetAtt EncryptionDecryptionKey.Arn
+  CustomAuthorizerIAMRoleName:
+    Description: "Custom Authorizer IAM Role Name"
+    Value: !Ref CustomAuthorizerIAMRole
