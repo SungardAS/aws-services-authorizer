@@ -1,5 +1,5 @@
 
-source env.local
+source .env.local
 
 sed -i 1 "s/AWS::REGION/$AWS_DEFAULT_REGION/g" swagger.yaml
 sed -i 2 "s/AWS::ACCOUNT_ID/$AWS_ACCOUNT_ID/g" swagger.yaml
